@@ -123,7 +123,13 @@ The variables we need are: Child.ID, Visit, Ethnicity, Diagnosis, Gender, Age, A
 It would be smart to rename the MullenRaw and ExpressiveLangRaw into something you can remember (i.e. nonVerbalIQ, verbalIQ)
 
 ```{r}
+library(tidyverse)
+data1_sub = select(data1, ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS, MullenRaw, ExpressiveLangRaw)
+data2_sub = select(data2, ID, Visit, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
+data3_sub = select(data3, ID, Visit, types_MOT, types_CHI, tokens_MOT, tokens_CHI)
 
+names(data1_sub)[names(data1_sub)=="MullenRaw"] <- "nonverbalIQ"
+names(data1_sub)[names(data1_sub)=="ExpressiveLangRaw"] <- "verbalIQ"
 
 ```
 
@@ -134,6 +140,9 @@ Tip: Merge only works for two data frames at the time.
 Tip: Check the number of observations in the datasets before and after merging. What is going on?
 
 ```{r}
+
+data4 = merge(data1_sub, data2_sub)
+finaldata = merge(data4, data3_sub)
 
 ```
 
@@ -149,6 +158,12 @@ Tip: the final dataset should have as many rows as the the old one.
 
 ```{r}
 
+finaldata_sub = subset(finaldata, Visit == "1")
+finaldata_sub = select(finaldata_sub, ID, ADOS, nonverbalIQ, verbalIQ)
+
+finaldata = finaldata[,-7:-9]
+finaldata_1 = merge(finaldata, finaldata_sub)
+
 ```
 
 Now, we are almost ready to actually start working with the data. However, here are some additional finishing touches:
@@ -162,7 +177,16 @@ Tip: as.numeric() might be a useful function, but not alone.
 Tip: Google "how to rename levels in R".
 
 ```{r}
+finaldata_1$ID = as.numeric(as.factor(finaldata_1$ID))
 
+finaldata_1$Visit = as.numeric(finaldata_1$Visit)
+
+finaldata_1$Gender = as.factor(finaldata_1$Gender)
+finaldata_1 <- transform(finaldata_1,
+          Gender=revalue(Gender,c("1"="M", "2"="F")))
+
+finaldata_1 <- transform(finaldata_1,
+          Diagnosis=revalue(Diagnosis,c("A"="ASD", "B"="TD")))
 
 ```
 
@@ -170,7 +194,7 @@ Tip: Google "how to rename levels in R".
 Save the data set using into a csv file. Hint: look into write.csv()
 
 ```{r}
-
+write.csv(finaldata_1, file = "finaldata.csv", sep = ",")
 ```
 
 
@@ -187,6 +211,13 @@ List all kids who:
 
 ```{r}
 
+filter(finaldata_1, CHI_MLU > 2.7)
+
+filter(finaldata_1, Visit == 1, CHI_MLU < 1.5)
+
+finaldata_1 = subset(finaldata, Visit == "1")
+
+####MISSING!!!!!!!!!!!
 
 ```
 
@@ -197,7 +228,13 @@ USING ARRANGE
 2. Sort kids to find the kid who produced the least amount of words on the 1st visit.
 
 ```{r}
+visit_6 = subset(finaldata_1, Visit == "6")
+arrange(visit_6, tokens_CHI)
+#Kid 55 produced the most words on the 6th visit
 
+visit_1 = subset(finaldata_1, Visit == "1")
+arrange(visit_1, tokens_CHI)
+#Kid 57 produced the most words on the 6th visit
 
 ```
 
@@ -207,6 +244,11 @@ USING SELECT
 2. What happens if you include the name of a variable multiple times in a select() call?
 
 ```{r}
+ASD_only = subset(finaldata_1, Diagnosis == "ASD")
+ASD_only = select(ASD_only, MOT_MLU, CHI_MLU, tokens_MOT, tokens_CHI)
+
+ASD_only2 = select(ASD_only, MOT_MLU, CHI_MLU, tokens_MOT, tokens_CHI, tokens_CHI)
+#The varible will only appear one time even though you have written it two times. 
 
 ```
 
