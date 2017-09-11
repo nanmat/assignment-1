@@ -261,6 +261,7 @@ USING MUTATE, SUMMARISE and PIPES
 finaldata_2 = finaldata_1 %>% group_by(Visit) %>% mutate(Mean_words_visit = sum(tokens_CHI)/length(tokens_CHI))
 
 finaldata_3 = finaldata_2 %>% group_by(ID) %>% mutate(Mean_words_id = sum(tokens_CHI)/length(tokens_CHI))
+finaldata_3
 
 #We don't just use the average values because we end up not taking the previous visit into account. We would violate the assumption of independence. We cannot regard multiple recordings from the same subject as independent from each other. 
 
