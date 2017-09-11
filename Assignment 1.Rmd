@@ -1,7 +1,7 @@
 ---
-title: "A1_P1_Student"
+title: "Nanna Kildahl Mathiasen"
 author: "Céline Carlsen"
-date: "29/8/2017"
+date: "11/9/2017"
 output: html_document
 ---
 
@@ -215,9 +215,8 @@ filter(finaldata_1, CHI_MLU > 2.7)
 
 filter(finaldata_1, Visit == 1, CHI_MLU < 1.5)
 
-finaldata_1 = subset(finaldata, Visit == "1")
-
-####MISSING!!!!!!!!!!!
+missed = finaldata_1 %>% group_by(ID) %>% tally()
+filter(missed, n < 6)
 
 ```
 
@@ -259,6 +258,11 @@ USING MUTATE, SUMMARISE and PIPES
 3. The solution to task above enables us to assess the average amount of words produced by each child. Why don't we just use these average values to describe the language production of the children? What is the advantage of keeping all the data?
 
 ```{r}
+finaldata_2 = finaldata_1 %>% group_by(Visit) %>% mutate(Mean_words_visit = sum(tokens_CHI)/length(tokens_CHI))
+
+finaldata_3 = finaldata_2 %>% group_by(ID) %>% mutate(Mean_words_id = sum(tokens_CHI)/length(tokens_CHI))
+
+#We don't just use the average values because we end up not taking the previous visit into account. We would violate the assumption of independence. We cannot regard multiple recordings from the same subject as independent from each other. 
 
 
 ```
