@@ -177,9 +177,9 @@ Tip: as.numeric() might be a useful function, but not alone.
 Tip: Google "how to rename levels in R".
 
 ```{r}
-finaldata_1$ID = as.numeric(as.factor(finaldata_1$ID))
+finaldata_1$ID = as.numeric(as.factor(as.character(finaldata_1$ID)))
 
-finaldata_1$Visit = as.numeric(finaldata_1$Visit)
+finaldata_1$Visit = as.numeric(as.character(finaldata_1$Visit))
 
 finaldata_1$Gender = as.factor(finaldata_1$Gender)
 finaldata_1 <- transform(finaldata_1,
@@ -211,7 +211,11 @@ List all kids who:
 
 ```{r}
 
-filter(finaldata_1, CHI_MLU > 2.7)
+finaldata_1 %>% group_by(ID) %>%
+summarise(MEAN = mean(CHI_MLU))
+filter(MEAN > 2.7)
+
+#filter(finaldata_1, CHI_MLU > 2.7)
 
 filter(finaldata_1, Visit == 1, CHI_MLU < 1.5)
 
