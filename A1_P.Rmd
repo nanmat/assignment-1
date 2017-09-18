@@ -219,7 +219,6 @@ model_best = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), Data, R
 summary(model_best)
 r.squaredGLMM(model_best)
 
-
 ```
 
 Visit: The result suggests that the child's MLU is significantly influenced over time: beta = 0.19, t(68.16) = 8.16, p < .05.
