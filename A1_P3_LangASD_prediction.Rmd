@@ -21,6 +21,27 @@ N.B. There are several datasets for this exercise, so pay attention to which one
 * Utterance Length data: https://www.dropbox.com/s/uxtqqzl18nwxowq/LU_test.csv?dl=0
 * Word data: https://www.dropbox.com/s/1ces4hv8kh0stov/token_test.csv?dl=0
 
+```{r}
+getwd()
+locpath= "/Users/nannakildahlmathiasen/OneDrive/3 Semester/Experimental Methods 3/Assignment 1"
+setwd(locpath)
+train_data = read.csv("finaldata.csv")
+word_data = read.csv("token_test.csv")
+demo_data = read.csv("demo_test.csv")
+lu_data = read.csv("LU_test.csv")
+#Omit the first column
+train_data = train_data[,-1]
+
+
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(pastecs)
+library(MuMIn)
+library(modelr)
+
+```
+
 ### Exercise 1) Testing model performance
 
 How did your models from last time perform? In this exercise you have to compare the results on the training data () and on the test data. Report both of them. Compare them. Discuss why they are different.
@@ -31,8 +52,65 @@ How did your models from last time perform? In this exercise you have to compare
 - test the performance of the models on the test data (Tips: time to reuse "predict()")
 - optional: predictions are never certain, can you identify the uncertainty of the predictions? (e.g. google predictinterval())
 
+```{r}
+train_model = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), train_data, REML = FALSE)
+#Calculating performance of the model on the training data:
+rmse(train_model, train_data)
 
-[HERE GOES YOUR ANSWER]
+#clean the 3 datasets:
+names(word_data)[names(word_data)=="SUBJ"] <- "ID"
+names(lu_data)[names(lu_data)=="SUBJ"] <- "ID"
+names(demo_data)[names(demo_data)=="Child.ID"] <- "ID"
+
+names(word_data)[names(word_data)=="VISIT"] <- "Visit"
+names(lu_data)[names(lu_data)=="VISIT"] <- "Visit"
+names(demo_data)[names(demo_data)=="Visit"] <- "Visit"
+
+#To homogeneize the way "visit" is reported
+library(stringr)
+word_data$Visit = str_extract(word_data$Visit, "\\d")
+lu_data$Visit = str_extract(lu_data$Visit, "\\d")
+demo_data$Visit = str_extract(demo_data$Visit, "\\d")
+
+#To remove the "." at the end of names
+word_data$ID = gsub("\\.","",word_data$ID)
+lu_data$ID = gsub("\\.","",lu_data$ID)
+demo_data$ID = gsub("\\.","",demo_data$ID)
+
+#To get the variables we need: Child.ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS,  MullenRaw, ExpressiveLangRaw, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd, types_MOT, types_CHI, tokens_MOT, tokens_CHI
+library(tidyverse)
+word_data_sub = select(word_data, ID, Visit, types_MOT, types_CHI, tokens_MOT, tokens_CHI)
+lu_data_sub = select(lu_data, ID, Visit, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
+demo_data_sub = select(demo_data, ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS, MullenRaw, ExpressiveLangRaw)
+
+names(demo_data_sub)[names(demo_data_sub)=="MullenRaw"] <- "nonverbalIQ"
+names(demo_data_sub)[names(demo_data_sub)=="ExpressiveLangRaw"] <- "verbalIQ"
+
+#To merge the three subsets
+sub_data_wordlu = merge(word_data_sub, lu_data_sub)
+test_data = merge(sub_data_wordlu, demo_data_sub)
+
+test_data_sub = subset(test_data, test_data$Visit == "1")
+test_data_sub = select(test_data_sub, ID, ADOS, nonverbalIQ, verbalIQ)
+
+#To omit the variables ADOS, nonVerbalIQ (MullenRaw) and verbalIQ (ExpressiveLangRaw)
+test_data = test_data[,-12:-15]
+final_test_data = merge(test_data, test_data_sub)
+
+final_test_data$ID = as.numeric(as.factor(as.character(final_test_data$ID)))
+
+final_test_data$Visit = as.numeric(as.character(final_test_data$Visit))
+
+final_test_data$Gender = as.factor(final_test_data$Gender)
+final_test_data <- transform(final_test_data,
+          Gender=revalue(Gender,c("1"="M", "2"="F")))
+
+final_test_data <- transform(final_test_data,
+          Diagnosis=revalue(Diagnosis,c("A"="ASD", "B"="TD")))
+
+#Calculating performance of the model on the test data:
+rmse(train_model, final_test_data)
+```
 
 ### Exercise 2) Model Selection via Cross-validation (N.B: ChildMLU!)
 
@@ -45,6 +123,32 @@ In this exercise you have to use cross-validation to calculate the predictive er
 - Report the results and comment on them.
 
 - Now try to find the best possible predictive model of ChildMLU, that is, the one that produces the best cross-validated results.
+
+```{r}
+clean_test_data = read_csv("clean_testdata.csv")
+clean_test_data = clean_test_data[,-1]
+
+basic_model = lmer(CHI_MLU ~ Visit + Diagnosis + (1 + Visit|ID), train_data, REML = FALSE)
+
+install.packages("caret")
+library(caret)
+#Creating 5 folds of the train data, where it divides by ID. 
+folds = createFolds(train_data$ID,5)
+
+for (i in folds) {
+  
+  print(paste("The year is", year))
+}
+
+rmse(train_model, train_data)
+
+LOOPS: for (i IN )
+select data
+train model
+test the model
+save the performance
+
+```
 
 - Bonus Question 1: How would you go comparing the performance of the basic model and the cross-validated model on the testing set?
 - Bonus Question 2: What is the effect of changing the number of folds? Can you plot RMSE as a function of number of folds?
@@ -64,6 +168,10 @@ You want to evaluate:
 - how does the child fare compared to the model predictions at Visit 6? Is the child below or above expectations? (tip: use the predict() function on Bernie's data only and compare the prediction with the actual performance of the child)
 
 [HERE GOES YOUR ANSWER]
+
+```{r}
+
+```
 
 ### OPTIONAL: Exercise 4) Model Selection via Information Criteria
 Another way to reduce the bad surprises when testing a model on new data is to pay close attention to the relative information criteria between the models you are comparing. Let's learn how to do that!
