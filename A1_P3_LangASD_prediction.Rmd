@@ -26,9 +26,10 @@ getwd()
 locpath= "/Users/nannakildahlmathiasen/OneDrive/3 Semester/Experimental Methods 3/Assignment 1"
 setwd(locpath)
 train_data = read.csv("finaldata.csv")
-word_data = read.csv("token_test.csv")
 demo_data = read.csv("demo_test.csv")
 lu_data = read.csv("LU_test.csv")
+word_data = read.csv("token_test.csv")
+
 #Omit the first column
 train_data = train_data[,-1]
 
@@ -39,6 +40,8 @@ library(lmerTest)
 library(pastecs)
 library(MuMIn)
 library(modelr)
+library(data.table)
+library(plyr)
 
 ```
 
@@ -58,47 +61,49 @@ train_model = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), train_
 rmse(train_model, train_data)
 
 #clean the 3 datasets:
-names(word_data)[names(word_data)=="SUBJ"] <- "ID"
-names(lu_data)[names(lu_data)=="SUBJ"] <- "ID"
 names(demo_data)[names(demo_data)=="Child.ID"] <- "ID"
+names(lu_data)[names(lu_data)=="SUBJ"] <- "ID"
+names(word_data)[names(word_data)=="SUBJ"] <- "ID"
 
-names(word_data)[names(word_data)=="VISIT"] <- "Visit"
-names(lu_data)[names(lu_data)=="VISIT"] <- "Visit"
 names(demo_data)[names(demo_data)=="Visit"] <- "Visit"
+names(lu_data)[names(lu_data)=="VISIT"] <- "Visit"
+names(word_data)[names(word_data)=="VISIT"] <- "Visit"
 
 #To homogeneize the way "visit" is reported
 library(stringr)
-word_data$Visit = str_extract(word_data$Visit, "\\d")
-lu_data$Visit = str_extract(lu_data$Visit, "\\d")
+
 demo_data$Visit = str_extract(demo_data$Visit, "\\d")
+lu_data$Visit = str_extract(lu_data$Visit, "\\d")
+word_data$Visit = str_extract(word_data$Visit, "\\d")
 
 #To remove the "." at the end of names
-word_data$ID = gsub("\\.","",word_data$ID)
-lu_data$ID = gsub("\\.","",lu_data$ID)
 demo_data$ID = gsub("\\.","",demo_data$ID)
+lu_data$ID = gsub("\\.","",lu_data$ID)
+word_data$ID = gsub("\\.","",word_data$ID)
 
 #To get the variables we need: Child.ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS,  MullenRaw, ExpressiveLangRaw, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd, types_MOT, types_CHI, tokens_MOT, tokens_CHI
 library(tidyverse)
-word_data_sub = select(word_data, ID, Visit, types_MOT, types_CHI, tokens_MOT, tokens_CHI)
-lu_data_sub = select(lu_data, ID, Visit, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
 demo_data_sub = select(demo_data, ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS, MullenRaw, ExpressiveLangRaw)
+lu_data_sub = select(lu_data, ID, Visit, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
+word_data_sub = select(word_data, ID, Visit, types_MOT, types_CHI, tokens_MOT, tokens_CHI)
+
 
 names(demo_data_sub)[names(demo_data_sub)=="MullenRaw"] <- "nonverbalIQ"
 names(demo_data_sub)[names(demo_data_sub)=="ExpressiveLangRaw"] <- "verbalIQ"
 
 #To merge the three subsets
-sub_data_wordlu = merge(word_data_sub, lu_data_sub)
-test_data = merge(sub_data_wordlu, demo_data_sub)
+sub_data_demolu = merge(demo_data_sub, lu_data_sub)
+test_data = merge(sub_data_demolu, word_data_sub)
 
-test_data_sub = subset(test_data, test_data$Visit == "1")
+test_data_sub = subset(test_data, Visit == "1")
 test_data_sub = select(test_data_sub, ID, ADOS, nonverbalIQ, verbalIQ)
 
 #To omit the variables ADOS, nonVerbalIQ (MullenRaw) and verbalIQ (ExpressiveLangRaw)
-test_data = test_data[,-12:-15]
+test_data = test_data[,-7:-9]
 final_test_data = merge(test_data, test_data_sub)
 
-final_test_data$ID = as.numeric(as.factor(as.character(final_test_data$ID)))
 
+final_test_data$ID = as.numeric(as.factor(as.character(final_test_data$ID)))
 final_test_data$Visit = as.numeric(as.character(final_test_data$Visit))
 
 final_test_data$Gender = as.factor(final_test_data$Gender)
@@ -125,9 +130,6 @@ In this exercise you have to use cross-validation to calculate the predictive er
 - Now try to find the best possible predictive model of ChildMLU, that is, the one that produces the best cross-validated results.
 
 ```{r}
-clean_test_data = read_csv("clean_testdata.csv")
-clean_test_data = clean_test_data[,-1]
-
 basic_model = lmer(CHI_MLU ~ Visit + Diagnosis + (1 + Visit|ID), train_data, REML = FALSE)
 
 install.packages("caret")
