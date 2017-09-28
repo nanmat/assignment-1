@@ -130,25 +130,61 @@ In this exercise you have to use cross-validation to calculate the predictive er
 - Now try to find the best possible predictive model of ChildMLU, that is, the one that produces the best cross-validated results.
 
 ```{r}
-basic_model = lmer(CHI_MLU ~ Visit + Diagnosis + (1 + Visit|ID), train_data, REML = FALSE)
-
-install.packages("caret")
 library(caret)
+library(Metrics)
+
 #Creating 5 folds of the train data, where it divides by ID. 
-folds = createFolds(train_data$ID,5)
+train_data$ID = as.factor(train_data$ID)
+folds = createFolds(unique(train_data$ID),4)
 
-for (i in folds) {
-  
-  print(paste("The year is", year))
+train_RMSE = NULL
+test_RMSE = NULL
+n = 1
+
+for (fold in folds) {
+  #train2 is everything but not fold, in first loop fold 1, in second loop fold 2. ! means all but not the following
+  train2 = subset(train_data, ! (ID %in% fold))
+  #test2 is every other fold than the fold in train2
+  test2 = subset(train_data, (ID %in% fold))
+  #The model we want to test
+  train_model_2 = lmer(CHI_MLU ~ Visit + Diagnosis + (1 + Visit|ID), train2, REML = FALSE)
+  #Test the model on train data, seeing how well the model predicts train data
+  train_RMSE[n] = Metrics::rmse(train2$CHI_MLU, predict(train_model_2, train2))
+  #Test the model on test data, seeing how well the model predicts test data - which is not a part of the model
+  pred = predict(train_model_2, test2, allow.new.levels = TRUE)
+  test_RMSE[n] = Metrics::rmse(test2$CHI_MLU, pred)
+  n = n+1
 }
+#Reporting the mean of how well the model predicts. 
+mean(test_RMSE)
+mean(train_RMSE)
+#The model is not a good model, because the model has much more error when predicting from the test data. 
 
-rmse(train_model, train_data)
 
-LOOPS: for (i IN )
-select data
-train model
-test the model
-save the performance
+
+
+#Testing the model we constructed last time and see if it predicts better:
+train_RMSE3 = NULL
+test_RMSE3 = NULL
+n = 1
+for (fold in folds) {
+  #train3 is everything but not fold, in first loop fold 1, in second loop fold 2. ! means all but not the following
+  train3 = subset(train_data, ! (ID %in% fold))
+  #test3 is every other fold than the fold in train3
+  test3 = subset(train_data, (ID %in% fold))
+  #The model we want to test
+  train_model_3 = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), train3, REML = FALSE)
+  #Test the model on train data, seeing how well the model predicts train data
+  train_RMSE3[n] = Metrics::rmse(train3$CHI_MLU, predict(train_model_3, train3))
+  #Test the model on test data, seeing how well the model predicts test data - which is not a part of the model
+  pred = predict(train_model_3, test3, allow.new.levels = TRUE)
+  test_RMSE3[n] = Metrics::rmse(test3$CHI_MLU, pred)
+  n = n+1
+}
+#Reporting the mean of how well the model predicts. 
+mean(test_RMSE3)
+mean(train_RMSE3)
+#The model is not a good model, because the model has much more error when predicting from the test data. 
 
 ```
 
@@ -172,7 +208,32 @@ You want to evaluate:
 [HERE GOES YOUR ANSWER]
 
 ```{r}
+#Making a subset with only Bernie
+bernie = merge(sub_data_demolu, word_data_sub)
+bernie_sub = subset(bernie, Visit == "1")
+bernie_sub = dplyr::select(bernie_sub, ID, ADOS, nonverbalIQ, verbalIQ)
+bernie = bernie[,-7:-9]
+bernie1 = merge(bernie, bernie_sub, by = "ID")
+bernie1 = subset(bernie1, ID == "Bernie",)
+bernie1$ID = as.numeric(as.factor(as.character(bernie1$ID)))
+bernie1$Visit = as.numeric(as.character(bernie1$Visit))
+bernie1$Gender = as.factor(bernie1$Gender)
+bernie1 <- transform(bernie1,
+          Gender=revalue(Gender,c("1"="M", "2"="F")))
+bernie1 <- transform(bernie1,
+          Diagnosis=revalue(Diagnosis,c("A"="ASD", "B"="TD"))) 
 
+TDtrain = train_data[train_data$Diagnosis == "TD",]
+
+#Making a model for the TD children
+TDmodel = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), TDtrain, REML = FALSE)
+
+#Predicting the expected CHI_MLU for Bernie
+bernie_pred = predict(TDmodel, bernie1, allow.new.levels = TRUE)
+#Calculating the distance between the actual and the predicted value of CHI_MLU for Bernie
+distance = bernie1$CHI_MLU - bernie_pred
+distance
+#Bernie develops better than TD children except for visit 2. 
 ```
 
 ### OPTIONAL: Exercise 4) Model Selection via Information Criteria
