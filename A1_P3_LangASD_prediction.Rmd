@@ -172,7 +172,7 @@ for (fold in folds) {
   train3 = subset(train_data, ! (ID %in% fold))
   #test3 is every other fold than the fold in train3
   test3 = subset(train_data, (ID %in% fold))
-  #The model we want to test
+  #The better model we want to test
   train_model_3 = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), train3, REML = FALSE)
   #Test the model on train data, seeing how well the model predicts train data
   train_RMSE3[n] = Metrics::rmse(train3$CHI_MLU, predict(train_model_3, train3))
@@ -184,7 +184,7 @@ for (fold in folds) {
 #Reporting the mean of how well the model predicts. 
 mean(test_RMSE3)
 mean(train_RMSE3)
-#The model is not a good model, because the model has much more error when predicting from the test data. 
+#The model is a better model because the error difference is smaller. 
 
 ```
 
@@ -205,7 +205,6 @@ You want to evaluate:
 
 - how does the child fare compared to the model predictions at Visit 6? Is the child below or above expectations? (tip: use the predict() function on Bernie's data only and compare the prediction with the actual performance of the child)
 
-[HERE GOES YOUR ANSWER]
 
 ```{r}
 #Making a subset with only Bernie
