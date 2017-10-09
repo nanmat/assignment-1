@@ -147,14 +147,14 @@ data2 = select(data, ID, Visit, Diagnosis, CHI_MLU)
 newdata = rbind(data2,fakedata)
 
 #Creating a new model to use the new data
-model3 = lmer(CHI_MLU ~ Visit*Diagnosis + (1 + Visit|ID), newdata, REML = FALSE)
+model3 = lmer(CHI_MLU ~ Visit + Diagnosis + (1 + Visit|ID), newdata, REML = FALSE)
 summary(model3)
 #The effect sizes: Visit = 0.11, Diagnosis = -0.14, Visit:Diagnosis = 0.10. 
 
 #Setting minimum effect size of interest, changing the effect sizes in model3: 
 fixef(model3)["Visit"] <- 0.05
 fixef(model3)["DiagnosisTD"] <- -0.10
-fixef(model3)["Visit:DiagnosisTD"] <- 0.05
+# fixef(model3)["Visit:DiagnosisTD"] <- 0.05
 
 PowerV2 = powerSim(model3,fixed("Visit"),nsim=100)
 PowerV2
@@ -168,7 +168,7 @@ plot(powerCurveD2)
 powerCurveV2 = powerCurve(model3, fixed("Visit"),along="ID", nsim=100)
 plot(powerCurveV2)
 
-#The power analysis reveals that there is no predictive power. The power curve returns the same results that even with more participants it is not possible to obtain a power over 80 %, not even a tendency that more participants would change the result. It seems that the visits and the diagnosis in itself has no predictive power, and only the interaction with visits and diagnosis has a power value that qualifies the model to predict the development. 
+#The power analysis with power curve reveals that there is no predictive power for diagnosis alone as the power not reach 80 % even with more kids and not even a tendency that more kids would change the result. Though visits qualifies with a power value over 80 % given there are more than 130 kids. The power of the effect of the visits as predictor is accepted. 
 
 ```
 
@@ -178,6 +178,5 @@ plot(powerCurveV2)
 Assume you have only the resources to collect 30 kids (15 with ASD and 15 TDs). Identify the power for each relevant effect and discuss whether it's worth to run the study and why.
 
 ```{r}
-#The previous exercise showed that the only relevant effect is the interaction and that would have a power value over 80 % with only 20 kids. Due to this it would be worth to run the study if interested in the interaction of diagnosis and visits but otherwise it would not be worth the effort. 
-
+#For visits the power is only around 30 % with 30 kids, so it isn't worth ro run the study as the power and thereby the effect is so low, but for the interaction effect the power analysis reveals that the power value would be close to 100 % with just 30 kids. So it depends on what you are interested in if it is worth to run the study. 
 ```
