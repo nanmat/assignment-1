@@ -1,0 +1,183 @@
+---
+title: "Assignment 1 - Language Development in ASD - part 4"
+author: "Nanna Kildahl Mathiasen"
+date: "August 10, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Welcome to the fourth exciting part of the Language Development in ASD exercise
+
+In this exercise we will assess how many participants we would need to adequately replicate our findings (ensuring our sample size is adequate, our alpha at 0.05 and our beta at 0.8).
+
+### Exercise 1
+
+How much power does your study have (if your model estimates are quite right)?
+- [GitHub]Load your dataset, fit your favorite model, assess power for your main effects and interactions of interest.
+- Report the power analysis and comment on what you can (or cannot) use its estimates for.
+```{r}
+getwd()
+locpath= "/Users/nannakildahlmathiasen/OneDrive/3 Semester/Experimental Methods 3/Assignment 1"
+setwd(locpath)
+data = read.csv("finaldata.csv")
+data = data[,-1]
+library(lmerTest); library(simr)
+
+model1 = lmer(CHI_MLU ~ Visit*Diagnosis + (1 + Visit|ID), data, REML = FALSE)
+summary(model1)
+model1originaldata = lmer(CHI_MLU ~ Visit*Diagnosis + (1 + Visit|ID), data, REML = FALSE)
+summary(model1originaldata)
+model2 = lmer(CHI_MLU ~ Visit + Diagnosis + (1 + Visit|ID), data, REML = FALSE)
+summary(model2)
+
+PowerV = powerSim(model2,fixed("Visit"),nsim=200)
+PowerV
+PowerD = powerSim(model2, fixed("Diagnosis"),nsim=200)
+PowerD
+PowerInteraction = powerSim(model1, fixed("Visit:Diagnosis"),nsim=200)
+PowerInteraction
+
+```
+
+#Power visit: The confidence interval is 95 % meaning that running the experiment 95 % of the times we will get a power value within 98.17 and 100.0 a 100 % of the times. 
+#Power interaction: we will get a power value within 98.17 and 100.0 a 100.0% of the times. 
+#Power Diagnosis: we will get a power value within 40.41 and 54.66 a 47.5 % of the times. 
+#We can only use the effect size of the power analysis if our experiment is well powered. The power value is good for visit as predictor and for the interaction between visit and diagnosis as predictor, so we can rely on the effect sizes. Though diagnosis is not well powered as a valid predictor to account for the development and thus the effect size is rather meaningless to rely upon. 
+
+### Exercise 2
+
+How would you perform a more conservative power analysis?
+- Identify and justify a minimum effect size for each of your relevant effects
+- [GitHub] take the model from exercise 1 and replace the effects with the minimum effect size that you'd accept.
+- [GitHub] assess the power curve by Child.ID, identifying an ideal number of participants to estimate each effect
+- OPTIONAL if your power estimates do not reach an acceptable threshold simulate additional participants and repeat the previous analysis
+- Report the power analysis and comment on what you can (or cannot) use its estimates for.
+
+```{r}
+#We find the effect size by the summary function and use the model with the interaction effect
+summary(model1)
+#Effectsize Visit: 0.10, effectsize Diagnosis: -0.22, effectsize interaction: 0.25
+
+#We halve the effect sizes to maintain a conservative power analysis. Setting minimum effect size of interest, changing the effect sizes in model1: 
+fixef(model1)["Visit"] <- 0.05
+fixef(model1)["DiagnosisTD"] <- -0.10
+fixef(model1)["Visit:DiagnosisTD"] <- 0.15
+summary(model1)
+#Making a power curve to estimate the effect
+powerCurveI = powerCurve(model1, fixed("Visit:Diagnosis"),along="ID", nsim=100)
+plot(powerCurveI)
+
+powerCurveD = powerCurve(model1, fixed("Diagnosis"),along="ID", nsim=100)
+plot(powerCurveD)
+
+powerCurveV = powerCurve(model1, fixed("Visit"),along="ID", nsim=100)
+plot(powerCurveV)
+
+
+#The minimum effect size for interaction effect was set at 0.15 due to knowledge of the MLU being a relatively low numeric value, so 0.15 is an acceptable effect size value. The reason for lowering the effect size from 0.25 to 0.15 is because effect size might be wrongly skewed due to low power of earlier studies. 
+#We can use this analysis to estimate how many children we need to obtain a power of 80 % when we predict from an interaction effect of visit and diagnosis where the minimum effect is 0.15. This minimum effect size means that we can predict effectsizes larger than 0.15 with good certainty, but if the effect size is less than 0.15 it will be of no interest.  
+#The effect size might seem low but when applied to the data it is a relatively good effect size refering to the increase of words from visit to visit. 
+#For the interactions effect around 20 participants should be enough to maintain good power.
+#The 60 participants in the experiment is netiher enough to validate good power for the Diagnosis or Visits. Thus we create new participants. 
+
+library(MASS)
+createNewData <- function (participants,visits,model){
+  # participants is the number of subjects
+  # visits is the number of visits
+  # TO DO: LOOP THROUGH ALL FE ROWS AND AUTOMATICALLY EXTRACT NAMES OF FIXED EFFECTS AND ESTIMATES
+  fe <- fixef(model)
+  Intercept <- fe[1] #intercept
+  bVisit <- fe[2] #visit
+  bDiagnosis <- fe[3] #diagnosis
+  bVisitDiagnosis <- fe[4] #visit diagnosis interaction
+  # TO DO: INTEGRATE STANDARD ERROR?
+  
+  # TO DO: LOOP THROUGH ALL COMPONENTS AND AUTOMATICALLY EXTRACT NAMES OF EFFECTS AND ESTIMATES
+  vc<-VarCorr(model) # variance component
+  sigmaSubject <- as.numeric(attr(vc[[1]],"stddev")[1]) # random intercept by subject
+  sigmaVisit <- as.numeric(attr(vc[[1]],"stddev")[2]) # random slope of visit over subject
+  sigmaResiduals <- as.numeric(attr(vc,"sc"))
+  sigmaCorrelation <- as.numeric(attr(vc[[1]],"correlation")[2])
+  
+  # Create an empty dataframe
+  d=expand.grid(Visit=1:visits,ID=1:participants)
+  # Randomly sample from a binomial (to generate the diagnosis)
+  condition <- sample(rep(0:1, participants/2))
+  d$Diagnosis<-condition[d$ID]
+  d$Diagnosis[is.na(d$Diagnosis)]<-1
+  
+  ## Define variance covariance matrices:
+  Sigma.u<-matrix(c(sigmaSubject^2,
+                    sigmaCorrelation*sigmaSubject*sigmaVisit,
+                    sigmaCorrelation*sigmaSubject*sigmaVisit,
+                    sigmaVisit^2),nrow=2)
+  
+  ## generate new fake participants (column1=RandomIntercept, column2=RandomSlope)
+  u<-mvrnorm(n=participants,
+             mu=c(0,0),Sigma=cov(ranef(model)$ID))
+  
+  ## now generate fake data:
+  ### the outcome is extracted from a gaussian with
+  ### the solution to the model's equation as mean and
+  ### the residual standard deviation as standard deviation 
+  d$CHI_MLU <- rnorm(participants*visits,
+                     (Intercept+u[,1]) +
+                     (bVisit+u[,2])*d$Visit + 
+                     bDiagnosis*d$Diagnosis ,sigmaResiduals)  
+  
+  return(d)
+}
+
+library(tidyverse)
+library(plyr)
+#Making a new dataframe with the newly created and the original data. First creating new data from the function above
+fakedata = createNewData(100, 6, model1originaldata)
+#Adding 100 to every ID to avoid the same ID in both dataframes
+fakedata$ID = fakedata$ID + 61
+#Changing the Diagnosis to a factor and changing the value from 0 and 1 to ASD and TD. 
+fakedata$Diagnosis = as.factor(fakedata$Diagnosis)
+fakedata <- transform(fakedata,
+          Diagnosis=revalue(Diagnosis,c("0"="ASD", "1"="TD")))
+#Making a new dataset from the original data with only the relevant variables
+data2 = select(data, ID, Visit, Diagnosis, CHI_MLU)
+#Binding the original and new fake data together. 
+newdata = rbind(data2,fakedata)
+
+#Creating a new model to use the new data
+model3 = lmer(CHI_MLU ~ Visit*Diagnosis + (1 + Visit|ID), newdata, REML = FALSE)
+summary(model3)
+#The effect sizes: Visit = 0.11, Diagnosis = -0.14, Visit:Diagnosis = 0.10. 
+
+#Setting minimum effect size of interest, changing the effect sizes in model3: 
+fixef(model3)["Visit"] <- 0.05
+fixef(model3)["DiagnosisTD"] <- -0.10
+fixef(model3)["Visit:DiagnosisTD"] <- 0.05
+
+PowerV2 = powerSim(model3,fixed("Visit"),nsim=100)
+PowerV2
+
+PowerD2 = powerSim(model3, fixed("Diagnosis"),nsim=10)
+PowerD2
+
+powerCurveD2 = powerCurve(model3, fixed("Diagnosis"),along="ID", nsim=100)
+plot(powerCurveD2)
+
+powerCurveV2 = powerCurve(model3, fixed("Visit"),along="ID", nsim=100)
+plot(powerCurveV2)
+
+#The power analysis reveals that there is no predictive power. The power curve returns the same results that even with more participants it is not possible to obtain a power over 80 %, not even a tendency that more participants would change the result. It seems that the visits and the diagnosis in itself has no predictive power, and only the interaction with visits and diagnosis has a power value that qualifies the model to predict the development. 
+
+```
+
+
+### Exercise 3
+
+Assume you have only the resources to collect 30 kids (15 with ASD and 15 TDs). Identify the power for each relevant effect and discuss whether it's worth to run the study and why.
+
+```{r}
+#The previous exercise showed that the only relevant effect is the interaction and that would have a power value over 80 % with only 20 kids. Due to this it would be worth to run the study if interested in the interaction of diagnosis and visits but otherwise it would not be worth the effort. 
+
+```

@@ -1,6 +1,6 @@
 ---
 title: "Assignment 1 - Language Development in ASD - part 3"
-author: "Riccardo Fusaroli"
+author: "Nanna Kildahl Mathiasen"
 date: "August 10, 2017"
 output: html_document
 ---
