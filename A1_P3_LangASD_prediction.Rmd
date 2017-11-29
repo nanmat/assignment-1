@@ -34,14 +34,17 @@ word_data = read.csv("token_test.csv")
 train_data = train_data[,-1]
 
 
-library(ggplot2)
-library(lme4)
+
 library(lmerTest)
-library(pastecs)
 library(MuMIn)
 library(modelr)
-library(data.table)
 library(plyr)
+library(stringr)
+library(tidyverse)
+library(merTools)
+library(caret)
+library(Metrics)
+library(ggplot2)
 
 ```
 
@@ -57,8 +60,15 @@ How did your models from last time perform? In this exercise you have to compare
 
 ```{r}
 train_model = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), train_data, REML = FALSE)
+summary(train_model) 
+
+# To find the root mean square error
+r.squaredGLMM(train_model)
+
+
 #Calculating performance of the model on the training data:
-rmse(train_model, train_data)
+modelr::rmse(train_model, train_data)
+
 
 #clean the 3 datasets:
 names(demo_data)[names(demo_data)=="Child.ID"] <- "ID"
@@ -113,8 +123,15 @@ final_test_data <- transform(final_test_data,
 final_test_data <- transform(final_test_data,
           Diagnosis=revalue(Diagnosis,c("A"="ASD", "B"="TD")))
 
-#Calculating performance of the model on the test data:
-rmse(train_model, final_test_data)
+
+# To test the model on the test dataset
+Metrics::rmse(final_test_data$CHI_MLU, predict(train_model, final_test_data, allow.new.levels = T))
+
+# To test the model on the train dataset
+Metrics::rmse(train_data$CHI_MLU, predict(train_model, train_data, allow.new.levels = T))
+
+# To get prediction interval for each participant for each visit 
+predictInterval(merMod = train_model, newdata = final_test_data, level = 0.95, n.sims = 1000, stat = "median", type="linear.prediction",include.resid.var = TRUE)
 ```
 
 ### Exercise 2) Model Selection via Cross-validation (N.B: ChildMLU!)
@@ -161,8 +178,6 @@ mean(train_RMSE)
 #The model is not a good model, because the model has much more error when predicting from the test data (rmse = 0.81) compared to the train data (rsme = 0.34). 
 
 
-
-
 #Testing the model we constructed last time and see if it predicts better:
 train_RMSE3 = NULL
 test_RMSE3 = NULL
@@ -185,6 +200,29 @@ for (fold in folds) {
 mean(test_RMSE3)
 mean(train_RMSE3)
 #The model is a better model because the error difference is smaller, test data (rmse = 0.61) and train data (rmse = 0.34). 
+
+#Testing a new model:
+train_RMSE4 = NULL
+test_RMSE4 = NULL
+n = 1
+for (fold in folds) {
+  #train3 is everything but not fold, in first loop fold 1, in second loop fold 2. ! means all but not the following
+  train4 = subset(train_data, ! (ID %in% fold))
+  #test3 is every other fold than the fold in train3
+  test4 = subset(train_data, (ID %in% fold))
+  #The better model we want to test
+  train_model_4 = lmer(CHI_MLU ~ Visit*Diagnosis + MOT_MLU + verbalIQ + (1 + Visit|ID), train4, REML = FALSE)
+  #Test the model on train data, seeing how well the model predicts train data
+  train_RMSE4[n] = Metrics::rmse(train4$CHI_MLU, predict(train_model_4, train4))
+  #Test the model on test data, seeing how well the model predicts test data - which is not a part of the model
+  pred = predict(train_model_4, test4, allow.new.levels = TRUE)
+  test_RMSE4[n] = Metrics::rmse(test4$CHI_MLU, pred)
+  n = n+1
+}
+#Reporting the mean of how well the model predicts. 
+mean(test_RMSE4)
+mean(train_RMSE4)
+#The model is a better model because the error difference is smaller, test data (rmse = 0.56) and train data (rmse = 0.33). 
 
 ```
 
@@ -209,6 +247,7 @@ You want to evaluate:
 ```{r}
 #Making a subset with only Bernie
 bernie = merge(sub_data_demolu, word_data_sub)
+
 bernie_sub = subset(bernie, Visit == "1")
 bernie_sub = dplyr::select(bernie_sub, ID, ADOS, nonverbalIQ, verbalIQ)
 bernie = bernie[,-7:-9]
@@ -216,23 +255,82 @@ bernie1 = merge(bernie, bernie_sub, by = "ID")
 bernie1 = subset(bernie1, ID == "Bernie",)
 bernie1$ID = as.numeric(as.factor(as.character(bernie1$ID)))
 bernie1$Visit = as.numeric(as.character(bernie1$Visit))
+
+#Transform gender and diagnosis variable
 bernie1$Gender = as.factor(bernie1$Gender)
 bernie1 <- transform(bernie1,
           Gender=revalue(Gender,c("1"="M", "2"="F")))
 bernie1 <- transform(bernie1,
           Diagnosis=revalue(Diagnosis,c("A"="ASD", "B"="TD"))) 
 
-TDtrain = train_data[train_data$Diagnosis == "TD",]
 
+#Making a dataframe with only data from TD's
+TDtrain = train_data[train_data$Diagnosis == "TD",]
 #Making a model for the TD children
-TDmodel = lmer(CHI_MLU ~ Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), TDtrain, REML = FALSE)
+TDmodel = lmer(CHI_MLU ~ 1 + Visit + MOT_MLU + verbalIQ + (1 + Visit|ID), TDtrain, REML = FALSE)
+summary(TDmodel)
+
+# To compare Bernie to the average TD
+# Equation: -1.69 + 0.285*x (VISIT) + 0.4896*y (MOT_MLU) + 0.0456*z (verbalIQ)
+myfunction = function(x, y, z) {
+  -1.69 + 0.285*x + 0.4896*y + 0.0456*z
+}
+
+mean(TDtrain$MOT_MLU[TDtrain$Visit == 1])
+mean(TDtrain$MOT_MLU[TDtrain$Visit == 2])
+mean(TDtrain$MOT_MLU[TDtrain$Visit == 3])
+mean(TDtrain$MOT_MLU[TDtrain$Visit == 4])
+mean(TDtrain$MOT_MLU[TDtrain$Visit == 5])
+mean(TDtrain$MOT_MLU[TDtrain$Visit == 6])
+MEAN_verbalIQ = mean(TDtrain$verbalIQ)
+
+# Visit 1
+TD_visit1=myfunction(1, 3.725789, 20.15)
+dif_visit1 = bernie1$CHI_MLU[bernie1$Visit == 1] - TD_visit1
+
+# Visit 2
+TD_visit2=myfunction(2, 3.974927 ,20.15)
+dif_visit2 = bernie1$CHI_MLU[bernie1$Visit == 2] - TD_visit2
+
+# Visit 3
+TD_visit3=myfunction(3, 4.147266 ,20.15)
+dif_visit3 = bernie1$CHI_MLU[bernie1$Visit == 3] - TD_visit3
+
+# Visit 4
+TD_visit4=myfunction(4, 4.289469 ,20.15)
+dif_visit4 = bernie1$CHI_MLU[bernie1$Visit == 4] - TD_visit4
+
+# Visit 5
+TD_visit5=myfunction(5, 4.407844 ,20.15)
+dif_visit5 = bernie1$CHI_MLU[bernie1$Visit == 5] - TD_visit5
+
+# Visit 6
+TD_visit6=myfunction(6, 4.39503 ,20.15)
+dif_visit6 = bernie1$CHI_MLU[bernie1$Visit == 6] - TD_visit6
+
+# To create a dataframe 
+Visits = c(1,2,3,4,5,6)
+Category = c("TD", "TD","TD","TD","TD","TD", "Bernie","Bernie","Bernie","Bernie","Bernie","Bernie")
+MLU = c(TD_visit1, TD_visit2, TD_visit3, TD_visit4, TD_visit5, TD_visit6, bernie1$CHI_MLU)
+
+Bernie_comp=data.frame(Visits, Category, MLU)
+
+# To create a plot
+ggplot(Bernie_comp, aes(x = Visits, y= MLU, colour = Category)) + geom_smooth() + geom_point()
+# From the plot it seems that Bernie performs better than the average TD (except Visit 2)
 
 #Predicting the expected CHI_MLU for Bernie
 bernie_pred = predict(TDmodel, bernie1, allow.new.levels = TRUE)
 #Calculating the distance between the actual and the predicted value of CHI_MLU for Bernie
 distance = bernie1$CHI_MLU - bernie_pred
 distance
-#Bernie develops better than TD children except for visit 2. 
+#Bernie develops better than TD children except for visit 2
+
+# Using the predict function to compare VISIT 6
+Bernie_6 = bernie1[6,] # To subset visit 6
+Bernie_pred=predict(TDmodel, Bernie_6, allow.new.levels = T) 
+Bernie_6$CHI_MLU - Bernie_pred # To get the difference between predicted and acutual value
+
 ```
 
 ### OPTIONAL: Exercise 4) Model Selection via Information Criteria
