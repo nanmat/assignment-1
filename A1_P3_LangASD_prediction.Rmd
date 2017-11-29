@@ -158,7 +158,7 @@ for (fold in folds) {
 #Reporting the mean of how well the model predicts. 
 mean(test_RMSE)
 mean(train_RMSE)
-#The model is not a good model, because the model has much more error when predicting from the test data. 
+#The model is not a good model, because the model has much more error when predicting from the test data (rmse = 0.81) compared to the train data (rsme = 0.34). 
 
 
 
@@ -184,7 +184,7 @@ for (fold in folds) {
 #Reporting the mean of how well the model predicts. 
 mean(test_RMSE3)
 mean(train_RMSE3)
-#The model is a better model because the error difference is smaller. 
+#The model is a better model because the error difference is smaller, test data (rmse = 0.61) and train data (rmse = 0.34). 
 
 ```
 

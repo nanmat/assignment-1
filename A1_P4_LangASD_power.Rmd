@@ -178,5 +178,6 @@ plot(powerCurveV2)
 Assume you have only the resources to collect 30 kids (15 with ASD and 15 TDs). Identify the power for each relevant effect and discuss whether it's worth to run the study and why.
 
 ```{r}
-#For visits the power is only around 30 % with 30 kids, so it isn't worth ro run the study as the power and thereby the effect is so low, but for the interaction effect the power analysis reveals that the power value would be close to 100 % with just 30 kids. So it depends on what you are interested in if it is worth to run the study. 
+
+ 
 ```

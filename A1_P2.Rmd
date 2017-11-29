@@ -136,10 +136,10 @@ summary(model4)
 
 ```
 
-Age: The result suggests that there is a significant difference between TD's and ASD's age: ASD children are generally elder than TD children, beta = -12.63, t(60) = -12.32, p < .05
-verbalIQ: The result suggests that there is a non-significant difference between TD's and ASD's verbal IQ, beta = 2.91, t(60) = 1.79, p > .05
-nonverbarlIQ: The result suggests that there is a non-significant difference between TD's and ASD's nonverbal IQ, beta = -0.9, t(60) = -0.76. p > .05
-Gender: The result suggests that there is a non-significant difference between gender across diagnosis, beta = -0.37, z(60) = -0.520, p > .05
+Age: The result suggests that there is a significant difference between TD's and ASD's age: ASD children are generally elder than TD children (beta = -12.63, t(60) = -12.32, p < .05)
+verbalIQ: The result suggests that there is a non-significant difference between TD's and ASD's verbal IQ (beta = 2.91, t(60) = 1.79, p > .05)
+nonverbarlIQ: The result suggests that there is a non-significant difference between TD's and ASD's nonverbal IQ (beta = -0.9, t(60) = -0.76. p > .05)
+Gender: The result suggests that there is a non-significant difference between gender across diagnosis (beta = -0.37, z(60) = -0.520, p > .05)
 
 
 ## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
@@ -222,5 +222,5 @@ r.squaredGLMM(model_best)
 ```
 
 Visit: The result suggests that the child's MLU is significantly influenced over time: beta = 0.19, t(68.16) = 8.16, p < .05.
-Visit: The result suggests that the child's MLU is significantly influenced by the mothers MLU: beta = 0.34, t(286.02) = 6.92, p < .05.
-Visit: The result suggests that the child's MLU is significantly influenced by the verbal IQ: beta = 0.07, t(66.89) = 9.51, p < .05.
+MOT_MLU: The result suggests that the child's MLU is significantly influenced by the mothers MLU: beta = 0.34, t(286.02) = 6.92, p < .05.
+Verbal IQ: The result suggests that the child's MLU is significantly influenced by the verbal IQ: beta = 0.07, t(66.89) = 9.51, p < .05.

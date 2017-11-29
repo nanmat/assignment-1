@@ -69,6 +69,7 @@ Tip: Look into the package data.table, or google "how to rename variables in R"
 
 library(data.table)
 library(plyr)
+library(tidyverse)
        
 names(data1)[names(data1)=="Child.ID"] <- "ID"
 names(data2)[names(data2)=="SUBJ"] <- "ID"
@@ -85,6 +86,7 @@ Tip: There is a package called stringr, which will be very handy for you also in
 
 ```{r}
 library(stringr)
+#Removing everything else than digits
 data1$Visit = str_extract(data1$Visit, "\\d")
 data2$Visit = str_extract(data2$Visit, "\\d")
 data3$Visit = str_extract(data3$Visit, "\\d")
@@ -124,10 +126,13 @@ It would be smart to rename the MullenRaw and ExpressiveLangRaw into something y
 
 ```{r}
 library(tidyverse)
+
+#Selecting the variables from each dataset
 data1_sub = select(data1, ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS, MullenRaw, ExpressiveLangRaw)
 data2_sub = select(data2, ID, Visit, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
 data3_sub = select(data3, ID, Visit, types_MOT, types_CHI, tokens_MOT, tokens_CHI)
 
+#Renaming two colums
 names(data1_sub)[names(data1_sub)=="MullenRaw"] <- "nonverbalIQ"
 names(data1_sub)[names(data1_sub)=="ExpressiveLangRaw"] <- "verbalIQ"
 
@@ -140,7 +145,7 @@ Tip: Merge only works for two data frames at the time.
 Tip: Check the number of observations in the datasets before and after merging. What is going on?
 
 ```{r}
-
+#Merging the three datasets together
 data4 = merge(data1_sub, data2_sub)
 finaldata = merge(data4, data3_sub)
 
@@ -157,10 +162,10 @@ Tip: the final dataset should have as many rows as the the old one.
 
 
 ```{r}
-
+#Extracting the data from visit 1
 finaldata_sub = subset(finaldata, Visit == "1")
+#Putting the values from visit 1 to the rest of the dataset
 finaldata_sub = select(finaldata_sub, ID, ADOS, nonverbalIQ, verbalIQ)
-
 finaldata = finaldata[,-7:-9]
 finaldata_1 = merge(finaldata, finaldata_sub)
 
@@ -181,6 +186,7 @@ finaldata_1$ID = as.numeric(as.factor(as.character(finaldata_1$ID)))
 
 finaldata_1$Visit = as.numeric(as.character(finaldata_1$Visit))
 
+#Making gender as a factor and changing the factors to M (male) and F (female)
 finaldata_1$Gender = as.factor(finaldata_1$Gender)
 finaldata_1 <- transform(finaldata_1,
           Gender=revalue(Gender,c("1"="M", "2"="F")))
@@ -194,7 +200,7 @@ finaldata_1 <- transform(finaldata_1,
 Save the data set using into a csv file. Hint: look into write.csv()
 
 ```{r}
-write.csv(finaldata_1, file = "finaldata.csv", sep = ",")
+write.csv(finaldata_1, "finaldata.csv", sep =",")
 ```
 
 
@@ -210,18 +216,18 @@ List all kids who:
 3. have not completed all trials. Tip: Use pipes to solve this
 
 ```{r}
-
-finaldata_1 %>% group_by(ID) %>%
-summarise(MEAN = mean(CHI_MLU))
-filter(MEAN > 2.7)
+finaldata=read.csv("finaldata.csv")
+finaldata=finaldata[,-1] #Omits the first column which we are not interested in
+finaldata %>% group_by(ID) %>% summarise(MEAN = mean(CHI_MLU)) %>% filter(MEAN > 2.7)
 
 #filter(finaldata_1, CHI_MLU > 2.7)
 
-filter(finaldata_1, Visit == 1, CHI_MLU < 1.5)
+CHI_MLU_1.5 = filter(finaldata, Visit == 1, CHI_MLU < 1.5)
+CHI_MLU_1.5$ID
 
-missed = finaldata_1 %>% group_by(ID) %>% tally()
-filter(missed, n < 6)
-
+missed = finaldata %>% group_by(ID) %>% tally()
+CHI_MLU_missed = filter(missed, n < 6)
+CHI_MLU_missed$ID
 ```
 
 
@@ -231,11 +237,11 @@ USING ARRANGE
 2. Sort kids to find the kid who produced the least amount of words on the 1st visit.
 
 ```{r}
-visit_6 = subset(finaldata_1, Visit == "6")
-arrange(visit_6, tokens_CHI)
+visit_6 = subset(finaldata, finaldata$Visit == 6)
+arrange(visit_6, c(visit_6$tokens_CHI))
 #Kid 55 produced the most words on the 6th visit
 
-visit_1 = subset(finaldata_1, Visit == "1")
+visit_1 = subset(finaldata, Visit == "1")
 arrange(visit_1, tokens_CHI)
 #Kid 57 produced the most words on the 6th visit
 
@@ -247,11 +253,11 @@ USING SELECT
 2. What happens if you include the name of a variable multiple times in a select() call?
 
 ```{r}
-ASD_only = subset(finaldata_1, Diagnosis == "ASD")
+ASD_only = subset(finaldata, Diagnosis == "ASD")
 ASD_only = select(ASD_only, MOT_MLU, CHI_MLU, tokens_MOT, tokens_CHI)
 
 ASD_only2 = select(ASD_only, MOT_MLU, CHI_MLU, tokens_MOT, tokens_CHI, tokens_CHI)
-#The varible will only appear one time even though you have written it two times. 
+#Nothing happens - The varible will only appear one time even though you have written it two times. 
 
 ```
 
@@ -262,7 +268,7 @@ USING MUTATE, SUMMARISE and PIPES
 3. The solution to task above enables us to assess the average amount of words produced by each child. Why don't we just use these average values to describe the language production of the children? What is the advantage of keeping all the data?
 
 ```{r}
-finaldata_2 = finaldata_1 %>% group_by(Visit) %>% mutate(Mean_words_visit = sum(tokens_CHI)/length(tokens_CHI))
+finaldata_2 = finaldata %>% group_by(Visit) %>% mutate(Mean_words_visit = sum(tokens_CHI)/length(tokens_CHI))
 
 finaldata_3 = finaldata_2 %>% group_by(ID) %>% mutate(Mean_words_id = sum(tokens_CHI)/length(tokens_CHI))
 finaldata_3
