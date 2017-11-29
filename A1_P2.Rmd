@@ -136,10 +136,10 @@ summary(model4)
 
 ```
 
-Age: The result suggests that there is a significant difference between TD's and ASD's age: ASD children are generally elder than TD children (beta = -12.63, t(60) = -12.32, p < .05)
-verbalIQ: The result suggests that there is a non-significant difference between TD's and ASD's verbal IQ (beta = 2.91, t(60) = 1.79, p > .05)
-nonverbarlIQ: The result suggests that there is a non-significant difference between TD's and ASD's nonverbal IQ (beta = -0.9, t(60) = -0.76. p > .05)
-Gender: The result suggests that there is a non-significant difference between gender across diagnosis (beta = -0.37, z(60) = -0.520, p > .05)
+Age: The result suggests that there is a significant difference between TD's and ASD's age: ASD children are generally older than TD children (beta = -12.63, SE = 1.03, t(60) = -12.32, p < .05)
+verbalIQ: The result suggests that there is a non-significant difference between TD's and ASD's verbal IQ (beta = 2.91, SE = 1.63, t(60) = 1.79, p > .05)
+nonverbarlIQ: The result suggests that there is a non-significant difference between TD's and ASD's nonverbal IQ (beta = -0.9, SE = 1.18, t(60) = -0.76. p > .05)
+Gender: The result suggests that there is a non-significant difference between gender across diagnosis (beta = -0.37, SE = 0.70, z(60) = -0.520, p > .05)
 
 
 ## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
@@ -154,9 +154,10 @@ Remember to plot the data first and then to run a statistical test.
 
 ```{r}
 ggplot(Data, aes(x = Visit, y = CHI_MLU, colour = Diagnosis)) + geom_point() + geom_smooth(method = lm)
-#We are aware that the plot is not a plot of the model we are testing, as the plot doesn't take into account the random effect of the ID, though it gives us an overview of the data. 
+#The plot visualize the data, but it doesn't visualize the model we use. The line of the plot does not visualize that each ID has its own slope and intercept. We are aware that the plot is not a plot of the model we are testing, as the plot doesn't take into account the random effect of the ID, though it gives us an overview of the data. 
 
 model_CHI = lmer(CHI_MLU ~ Visit + Diagnosis + (1 + Visit|ID), Data, REML = FALSE)
+#Each ID gets it own intercept and own slope
 summary(model_CHI)
 r.squaredGLMM(model_CHI)
 
@@ -180,7 +181,13 @@ Remember: a growth curve model assesses whether changes in time can be described
 First build the different models, then compare them to see which one is better
 
 ```{r}
+m_quadratic = lmer(CHI_MLU ~ Visit + I(Visit^2) + Diagnosis + (1 + Visit|ID), Data, REML = FALSE)
+summary(m_quadratic)
 
+m_cubic = lmer(CHI_MLU ~ Visit + I(Visit^2) + I(Visit^3) + Diagnosis + (1 + Visit|ID), Data, REML = FALSE)
+summary(m_cubic)
+
+anova(model_CHI, m_quadratic, m_cubic)
 ```
 
 Exciting right?
@@ -207,7 +214,7 @@ r.squaredGLMM(model_MOT)
 ```
 
 Visit: The result suggests that there is a significant difference between the parental MLU over time, the parental MLU increases from visit to visit: beta = 0.12, t(59.53) = 6.6, p < .05. 
-Diagnosis: The result suggests that there is a significant difference between the parental MLU from TD and ASD and so changes according to diagnosis. The parental MLU increases more for TD than for ASD: beta = 0.50, t(60.92) = 4.43, p < .05. 
+Diagnosis: The result suggests that there is a significant difference between the parental MLU from TD and ASD and so changes according to diagnosis. The parental MLU is higher for TD than for ASD, the intercept for TD's are 0.50 MLU higher than the intercept for ASD (beta = 0.50, t(60.92) = 4.43, p < .05). 
 
 ### Adding new variables (Exercise 4)
 
