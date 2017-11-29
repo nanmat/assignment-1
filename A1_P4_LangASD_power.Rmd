@@ -154,7 +154,6 @@ summary(model3)
 #Setting minimum effect size of interest, changing the effect sizes in model3: 
 fixef(model3)["Visit"] <- 0.05
 fixef(model3)["DiagnosisTD"] <- -0.10
-# fixef(model3)["Visit:DiagnosisTD"] <- 0.05
 
 PowerV2 = powerSim(model3,fixed("Visit"),nsim=100)
 PowerV2
