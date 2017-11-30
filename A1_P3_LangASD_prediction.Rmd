@@ -93,9 +93,9 @@ word_data$ID = gsub("\\.","",word_data$ID)
 
 #To get the variables we need: Child.ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS,  MullenRaw, ExpressiveLangRaw, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd, types_MOT, types_CHI, tokens_MOT, tokens_CHI
 library(tidyverse)
-demo_data_sub = select(demo_data, ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS, MullenRaw, ExpressiveLangRaw)
-lu_data_sub = select(lu_data, ID, Visit, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
-word_data_sub = select(word_data, ID, Visit, types_MOT, types_CHI, tokens_MOT, tokens_CHI)
+demo_data_sub = dplyr::select(demo_data, ID, Visit, Ethnicity, Diagnosis, Gender, Age, ADOS, MullenRaw, ExpressiveLangRaw)
+lu_data_sub = dplyr::select(lu_data, ID, Visit, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
+word_data_sub = dplyr::select(word_data, ID, Visit, types_MOT, types_CHI, tokens_MOT, tokens_CHI)
 
 
 names(demo_data_sub)[names(demo_data_sub)=="MullenRaw"] <- "nonverbalIQ"
@@ -106,7 +106,7 @@ sub_data_demolu = merge(demo_data_sub, lu_data_sub)
 test_data = merge(sub_data_demolu, word_data_sub)
 
 test_data_sub = subset(test_data, Visit == "1")
-test_data_sub = select(test_data_sub, ID, ADOS, nonverbalIQ, verbalIQ)
+test_data_sub = dplyr::select(test_data_sub, ID, ADOS, nonverbalIQ, verbalIQ)
 
 #To omit the variables ADOS, nonVerbalIQ (MullenRaw) and verbalIQ (ExpressiveLangRaw)
 test_data = test_data[,-7:-9]
@@ -287,26 +287,32 @@ MEAN_verbalIQ = mean(TDtrain$verbalIQ)
 # Visit 1
 TD_visit1=myfunction(1, 3.725789, 20.15)
 dif_visit1 = bernie1$CHI_MLU[bernie1$Visit == 1] - TD_visit1
+dif_visit1
 
 # Visit 2
 TD_visit2=myfunction(2, 3.974927 ,20.15)
 dif_visit2 = bernie1$CHI_MLU[bernie1$Visit == 2] - TD_visit2
+dif_visit2
 
 # Visit 3
 TD_visit3=myfunction(3, 4.147266 ,20.15)
 dif_visit3 = bernie1$CHI_MLU[bernie1$Visit == 3] - TD_visit3
+dif_visit3
 
 # Visit 4
 TD_visit4=myfunction(4, 4.289469 ,20.15)
 dif_visit4 = bernie1$CHI_MLU[bernie1$Visit == 4] - TD_visit4
+dif_visit4
 
 # Visit 5
 TD_visit5=myfunction(5, 4.407844 ,20.15)
 dif_visit5 = bernie1$CHI_MLU[bernie1$Visit == 5] - TD_visit5
+dif_visit5
 
 # Visit 6
 TD_visit6=myfunction(6, 4.39503 ,20.15)
 dif_visit6 = bernie1$CHI_MLU[bernie1$Visit == 6] - TD_visit6
+dif_visit6
 
 # To create a dataframe 
 Visits = c(1,2,3,4,5,6)
